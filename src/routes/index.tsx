@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { createInvitation, saveAnswer } from "@/lib/invite.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,7 +73,27 @@ function Choice({ options, value, onPick }: { options: string[]; value: string; 
 }
 
 function Index() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
+  const [name, setName] = useState("");
+  const [details, setDetails] = useState("");
+  const [invite, setInvite] = useState("");
+  const [inviteId, setInviteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const createFn = useServerFn(createInvitation);
+  const saveFn = useServerFn(saveAnswer);
+  const generate = async () => {
+    setLoading(true); setErr("");
+    try {
+      const r = await createFn({ data: { name, details } });
+      if (r.error) setErr(r.error); else { setInvite(r.message); setInviteId(r.id); }
+    } catch { setErr("Something went wrong. Please try again."); }
+    setLoading(false);
+  };
+  const finish = () => {
+    setStep(4);
+    if (inviteId) saveFn({ data: { id: inviteId, date_time: date, food, activity } }).catch(() => {});
+  };
   const [noCount, setNoCount] = useState(0);
   const [noPos, setNoPos] = useState<{ x: number; y: number } | null>(null);
   const [date, setDate] = useState("");
@@ -92,6 +114,36 @@ function Index() {
     <main className="relative flex min-h-screen items-center justify-center px-5 py-10">
       <Hearts />
       <div ref={areaRef} key={step} className="animate-pop relative z-10 w-full max-w-md rounded-xl bg-card/90 p-7 text-center shadow-soft backdrop-blur">
+        {step === -1 && !invite && (
+          <>
+            <div className="text-6xl">💌</div>
+            <h1 className="mt-4 font-display text-3xl font-semibold leading-tight">A little something for you</h1>
+            <p className="mt-2 text-muted-foreground">Tell me about yourself and get a personal invitation from {"Thabiso bee"}.</p>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={80}
+              className="mt-6 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring" />
+            <textarea value={details} onChange={(e) => setDetails(e.target.value)} maxLength={1000} rows={4}
+              placeholder="A few things about you — favourite food, hobbies, what makes you smile…"
+              className="mt-3 w-full rounded-xl border-2 border-input bg-background px-4 py-3 outline-none focus:border-ring" />
+            {err && <p className="mt-3 text-sm text-primary">{err}</p>}
+            <button disabled={!name.trim() || !details.trim() || loading} onClick={generate}
+              className="mt-5 w-full rounded-full bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-40">
+              {loading ? "Writing your invitation… ✍️" : "Get my invitation ✨"}
+            </button>
+          </>
+        )}
+
+        {step === -1 && invite && (
+          <>
+            <div className="text-6xl">💝</div>
+            <h2 className="mt-4 font-display text-3xl font-semibold">For {name}</h2>
+            <p className="mt-5 whitespace-pre-line rounded-xl bg-secondary p-5 text-left leading-relaxed text-secondary-foreground">{invite}</p>
+            <button onClick={() => setStep(0)}
+              className="mt-6 w-full rounded-full bg-primary py-3 font-semibold text-primary-foreground">
+              Continue 💖
+            </button>
+          </>
+        )}
+
         {step === 0 && (
           <>
             <div className="text-6xl">🧸💌</div>
@@ -162,7 +214,7 @@ function Index() {
             <div className="mt-6"><Choice options={activities} value={activity} onPick={setActivity} /></div>
             <button
               disabled={!activity}
-              onClick={() => setStep(4)}
+              onClick={finish}
               className="mt-6 w-full rounded-full bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-40"
             >
               Seal the deal 💌
@@ -181,7 +233,7 @@ function Index() {
             </div>
             <p className="mt-5 text-muted-foreground">Screenshot this and send it to me 😘</p>
             <button
-              onClick={() => { setStep(0); setNoCount(0); setNoPos(null); setDate(""); setFood(""); setActivity(""); }}
+              onClick={() => { setStep(-1); setInvite(""); setInviteId(null); setName(""); setDetails(""); setNoCount(0); setNoPos(null); setDate(""); setFood(""); setActivity(""); }}
               className="mt-5 text-sm text-muted-foreground underline"
             >
               Start over
