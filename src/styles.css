@@ -72,3 +72,20 @@
   100% { transform: scale(1); opacity: 1; }
 }
 @utility animate-pop { animation: pop .45s cubic-bezier(.2,1.4,.4,1) both; }
+
+/* Globally hide the injected "Edit with Lovable" badge and every part of it. */
+#lovable-badge,
+[id^="lovable-badge"],
+[id*="lovable-badge"],
+[class*="lovable-badge"],
+a[href*="lovable.dev/edit"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+}
